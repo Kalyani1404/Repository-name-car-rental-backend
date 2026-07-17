@@ -1,0 +1,1 @@
+package com.kalyani.car_rental_backend.review.repository;import com.kalyani.car_rental_backend.review.entity.Review;import org.springframework.data.jpa.repository.JpaRepository;import java.util.List;public interface ReviewRepository extends JpaRepository<Review,Long>{boolean existsByBookingId(Long id);List<Review> findByBookingCarIdOrderByCreatedAtDesc(Long carId);}

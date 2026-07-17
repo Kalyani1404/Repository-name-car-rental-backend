@@ -1,0 +1,1 @@
+package com.kalyani.car_rental_backend.emergency.dto;import jakarta.validation.constraints.*;public class EmergencyContactRequest{@NotBlank@Size(max=80)public String name;@NotBlank@Pattern(regexp="^[6-9][0-9]{9}$")public String phone;@Size(max=40)public String relationship;}

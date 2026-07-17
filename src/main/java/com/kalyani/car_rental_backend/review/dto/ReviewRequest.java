@@ -1,0 +1,1 @@
+package com.kalyani.car_rental_backend.review.dto;import jakarta.validation.constraints.*;public class ReviewRequest{@NotNull public Long bookingId;@Min(1)@Max(5)public int rating;@Size(max=1500)public String comment;}

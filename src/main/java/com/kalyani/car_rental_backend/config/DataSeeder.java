@@ -1,0 +1,312 @@
+package com.kalyani.car_rental_backend.config;
+
+import com.kalyani.car_rental_backend.car.entity.Car;
+import com.kalyani.car_rental_backend.car.repository.CarRepository;
+import com.kalyani.car_rental_backend.user.entity.Role;
+import com.kalyani.car_rental_backend.user.entity.User;
+import com.kalyani.car_rental_backend.user.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+
+@Component
+public class DataSeeder implements CommandLineRunner {
+
+    private final UserRepository users;
+    private final CarRepository cars;
+    private final PasswordEncoder encoder;
+
+    @Value("${admin.email}")
+    private String email;
+
+    @Value("${admin.password}")
+    private String password;
+
+    @Value("${admin.name}")
+    private String name;
+
+    public DataSeeder(
+            UserRepository users,
+            CarRepository cars,
+            PasswordEncoder encoder
+    ) {
+        this.users = users;
+        this.cars = cars;
+        this.encoder = encoder;
+    }
+
+    @Override
+    public void run(String... args) {
+
+        seedAdmin();
+        seedCars();
+    }
+
+    /*
+     * Create the default admin account only when it does not exist.
+     */
+    private void seedAdmin() {
+
+        if (!users.existsByEmailIgnoreCase(email)) {
+
+            User admin = new User();
+
+            admin.setFullName(name);
+            admin.setEmail(email.toLowerCase());
+            admin.setPassword(encoder.encode(password));
+            admin.setRole(Role.ADMIN);
+            admin.setProvider("LOCAL");
+            admin.setStatus("ACTIVE");
+            admin.setEmailVerified(true);
+
+            users.save(admin);
+
+            System.out.println("Default admin created successfully.");
+        }
+    }
+
+    /*
+     * Add or update the four demonstration cars.
+     */
+    private void seedCars() {
+
+        /*
+         * Maruti Suzuki Swift
+         */
+        addOrUpdateCar(
+                "Swift",
+                "Maruti Suzuki",
+                "ZXI",
+                2024,
+                "White",
+                "MH12AB1001",
+                "Petrol",
+                "Manual",
+                5,
+                1800,
+                11000,
+                42000,
+                "Pune",
+                18.5204,
+                73.8567,
+                "ICICI Lombard",
+                "INS-MH12AB1001",
+                "Bluetooth, Android Auto, Apple CarPlay, Reverse Camera, "
+                        + "ABS, Dual Airbags, Power Steering, Central Locking, "
+                        + "Power Windows, Air Conditioning",
+                "Full to Full",
+                300,
+                200,
+                5000,
+                "https://res.cloudinary.com/ezqhrsyl/image/upload/"
+                        + "f_auto,q_auto,w_1200/"
+                        + "v1784271132/Maruti_Suzuki_Swift_white_snareb",
+                4.7
+        );
+
+        /*
+         * Hyundai i20
+         */
+        addOrUpdateCar(
+                "i20",
+                "Hyundai",
+                "Asta",
+                2024,
+                "Blue",
+                "MH12AB1002",
+                "Petrol",
+                "Automatic",
+                5,
+                2200,
+                14000,
+                52000,
+                "Mumbai",
+                19.0760,
+                72.8777,
+                "HDFC ERGO",
+                "INS-MH12AB1002",
+                "Touchscreen Infotainment, Bluetooth, Android Auto, "
+                        + "Apple CarPlay, Reverse Camera, ABS, Six Airbags, "
+                        + "Automatic Climate Control, Cruise Control, "
+                        + "Push Button Start, Rear Parking Sensors",
+                "Full to Full",
+                300,
+                250,
+                6000,
+                "https://res.cloudinary.com/ezqhrsyl/image/upload/"
+                        + "f_auto,q_auto,w_1200/"
+                        + "v1784271131/Hyundai_i20_blue_yu6odk",
+                4.8
+        );
+
+        /*
+         * Tata Nexon
+         */
+        addOrUpdateCar(
+                "Nexon",
+                "Tata",
+                "XZ+",
+                2024,
+                "Grey",
+                "MH12AB1003",
+                "Diesel",
+                "Manual",
+                5,
+                2600,
+                16500,
+                62000,
+                "Pune",
+                18.5204,
+                73.8567,
+                "Tata AIG",
+                "INS-MH12AB1003",
+                "Touchscreen Infotainment, Android Auto, Apple CarPlay, "
+                        + "Reverse Camera, ABS, Dual Airbags, Electronic "
+                        + "Stability Control, Hill Hold Assist, Cruise Control, "
+                        + "Automatic Climate Control, Rear Parking Sensors",
+                "Full to Full",
+                300,
+                300,
+                7000,
+                "https://res.cloudinary.com/ezqhrsyl/image/upload/"
+                        + "f_auto,q_auto,w_1200/"
+                        + "v1784271164/Tata_Nexon_grey_ktpxv4",
+                4.9
+        );
+
+        /*
+         * Mahindra XUV700
+         */
+        addOrUpdateCar(
+                "XUV700",
+                "Mahindra",
+                "AX7",
+                2024,
+                "Black",
+                "MH12AB1004",
+                "Diesel",
+                "Automatic",
+                7,
+                4200,
+                26500,
+                99000,
+                "Bengaluru",
+                12.9716,
+                77.5946,
+                "Bajaj Allianz",
+                "INS-MH12AB1004",
+                "Panoramic Sunroof, Touchscreen Infotainment, Android Auto, "
+                        + "Apple CarPlay, Reverse Camera, 360 Degree Camera, "
+                        + "ABS, Seven Airbags, ADAS, Cruise Control, "
+                        + "Automatic Climate Control, Hill Hold Assist, "
+                        + "Electronic Stability Control, Premium Sound System",
+                "Full to Full",
+                350,
+                400,
+                12000,
+                "https://res.cloudinary.com/ezqhrsyl/image/upload/"
+                        + "f_auto,q_auto,w_1200/"
+                        + "v1784271131/Mahindra_XUV700_black_hyujvj",
+                4.9
+        );
+    }
+
+    /*
+     * Adds a new car or updates an existing car having the same
+     * registration number.
+     */
+    private void addOrUpdateCar(
+            String name,
+            String brand,
+            String model,
+            int year,
+            String color,
+            String registrationNumber,
+            String fuelType,
+            String transmission,
+            int seatingCapacity,
+            int pricePerDay,
+            int pricePerWeek,
+            int pricePerMonth,
+            String city,
+            double latitude,
+            double longitude,
+            String insuranceProvider,
+            String insurancePolicyNumber,
+            String features,
+            String fuelPolicy,
+            int mileageLimitPerDay,
+            int lateFeePerHour,
+            int securityDeposit,
+            String imageUrl,
+            double rating
+    ) {
+
+        Car car = cars.findAll()
+                .stream()
+                .filter(existingCar ->
+                        existingCar.getRegistrationNumber() != null
+                                && existingCar
+                                .getRegistrationNumber()
+                                .equalsIgnoreCase(registrationNumber)
+                )
+                .findFirst()
+                .orElseGet(Car::new);
+
+        boolean isNewCar = car.getId() == null;
+
+        car.setName(name);
+        car.setBrand(brand);
+        car.setModel(model);
+        car.setYear(year);
+        car.setColor(color);
+        car.setRegistrationNumber(registrationNumber);
+
+        car.setFuelType(fuelType);
+        car.setTransmission(transmission);
+        car.setSeatingCapacity(seatingCapacity);
+
+        car.setPricePerDay(BigDecimal.valueOf(pricePerDay));
+        car.setPricePerWeek(BigDecimal.valueOf(pricePerWeek));
+        car.setPricePerMonth(BigDecimal.valueOf(pricePerMonth));
+
+        car.setCurrentLocationCity(city);
+        car.setCurrentLocationLatitude(latitude);
+        car.setCurrentLocationLongitude(longitude);
+
+        car.setInsuranceProvider(insuranceProvider);
+        car.setInsurancePolicyNumber(insurancePolicyNumber);
+
+        car.setFeatures(features);
+        car.setFuelPolicy(fuelPolicy);
+        car.setMileageLimitPerDay(mileageLimitPerDay);
+
+        car.setLateFeePerHour(
+                BigDecimal.valueOf(lateFeePerHour)
+        );
+
+        car.setSecurityDeposit(
+                BigDecimal.valueOf(securityDeposit)
+        );
+
+        car.setImageUrl(imageUrl);
+        car.setIsAvailable(true);
+        car.setAvailabilityStatus("AVAILABLE");
+        car.setRating(rating);
+
+        cars.save(car);
+
+        if (isNewCar) {
+            System.out.println(
+                    brand + " " + name + " added successfully."
+            );
+        } else {
+            System.out.println(
+                    brand + " " + name + " updated successfully."
+            );
+        }
+    }
+}

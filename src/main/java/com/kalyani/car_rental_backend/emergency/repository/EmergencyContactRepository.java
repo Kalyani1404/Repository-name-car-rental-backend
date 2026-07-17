@@ -1,0 +1,1 @@
+package com.kalyani.car_rental_backend.emergency.repository;import com.kalyani.car_rental_backend.emergency.entity.EmergencyContact;import org.springframework.data.jpa.repository.JpaRepository;import java.util.List;public interface EmergencyContactRepository extends JpaRepository<EmergencyContact,Long>{List<EmergencyContact>findByUserEmailIgnoreCase(String email);}

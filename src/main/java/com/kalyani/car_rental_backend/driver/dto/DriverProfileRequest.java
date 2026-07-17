@@ -1,0 +1,1 @@
+package com.kalyani.car_rental_backend.driver.dto;import jakarta.validation.constraints.*;public class DriverProfileRequest{@NotBlank@Size(max=40)public String licenseNumber;@Pattern(regexp="^[0-9]{4}$",message="Enter last 4 Aadhaar digits")public String aadhaarLast4;@NotBlank@Size(max=30)public String vehicleNumber;@NotBlank@Size(max=80)public String vehicleModel;}
