@@ -7,6 +7,8 @@ import com.kalyani.car_rental_backend.payment.dto.*;
 import com.kalyani.car_rental_backend.payment.entity.*;
 import com.kalyani.car_rental_backend.payment.repository.PaymentRepository;
 import com.kalyani.car_rental_backend.payment.service.PaymentService;
+import com.kalyani.car_rental_backend.notification.entity.Notification;
+import com.kalyani.car_rental_backend.notification.repository.NotificationRepository;
 import com.kalyani.car_rental_backend.user.entity.Role;
 import com.kalyani.car_rental_backend.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -15,8 +17,8 @@ import java.util.*;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
-    private final PaymentRepository payments; private final BookingRepository bookings; private final UserRepository users;
-    public PaymentServiceImpl(PaymentRepository p,BookingRepository b,UserRepository u){payments=p;bookings=b;users=u;}
+    private final PaymentRepository payments; private final BookingRepository bookings; private final UserRepository users; private final NotificationRepository notifications;
+    public PaymentServiceImpl(PaymentRepository p,BookingRepository b,UserRepository u,NotificationRepository n){payments=p;bookings=b;users=u;notifications=n;}
 
     @Transactional public PaymentResponse create(PaymentRequest r,String email){
         if(payments.existsByBookingId(r.getBookingId())) throw new IllegalArgumentException("Payment already exists for this booking");
@@ -27,7 +29,14 @@ public class PaymentServiceImpl implements PaymentService {
         Payment p=new Payment();p.setTransactionReference("PAY-"+UUID.randomUUID().toString().substring(0,10).toUpperCase());
         p.setBooking(booking);p.setUser(user);p.setAmount(booking.getGrandTotal());p.setPaymentMethod(r.getPaymentMethod());p.setStatus(PaymentStatus.SUCCESS);
         booking.setStatus(BookingStatus.CONFIRMED);bookings.save(booking);
-        return out(payments.save(p));
+        Payment saved=payments.save(p);
+        Notification n=new Notification();
+        n.setUser(booking.getUser());
+        n.setTitle("Payment successful");
+        n.setMessage("Payment of ₹" + saved.getAmount() + " was successful for booking " + booking.getBookingReference() + ". Your booking is confirmed.");
+        n.setType("PAYMENT");
+        notifications.save(n);
+        return out(saved);
     }
     public List<PaymentResponse> list(String email,boolean admin){
         var list=admin?payments.findAll():payments.findByUserEmailIgnoreCaseOrderByCreatedAtDesc(email);

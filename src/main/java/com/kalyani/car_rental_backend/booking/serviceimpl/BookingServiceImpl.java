@@ -6,6 +6,8 @@ import com.kalyani.car_rental_backend.booking.repository.BookingRepository;
 import com.kalyani.car_rental_backend.booking.service.BookingService;
 import com.kalyani.car_rental_backend.car.repository.CarRepository;
 import com.kalyani.car_rental_backend.exception.ResourceNotFoundException;
+import com.kalyani.car_rental_backend.notification.entity.Notification;
+import com.kalyani.car_rental_backend.notification.repository.NotificationRepository;
 import com.kalyani.car_rental_backend.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,8 +17,8 @@ import java.util.*;
 
 @Service
 public class BookingServiceImpl implements BookingService {
-    private final BookingRepository bookings; private final CarRepository cars; private final UserRepository users;
-    public BookingServiceImpl(BookingRepository b,CarRepository c,UserRepository u){bookings=b;cars=c;users=u;}
+    private final BookingRepository bookings; private final CarRepository cars; private final UserRepository users; private final NotificationRepository notifications;
+    public BookingServiceImpl(BookingRepository b,CarRepository c,UserRepository u,NotificationRepository n){bookings=b;cars=c;users=u;notifications=n;}
 
     @Transactional public BookingResponse create(BookingRequest r,String email){
         if(!r.getEndDate().isAfter(r.getStartDate())) throw new IllegalArgumentException("End date must be after start date");
@@ -32,7 +34,14 @@ public class BookingServiceImpl implements BookingService {
         b.setInsuranceType(r.getInsuranceType());b.setCouponCode(r.getCouponCode());b.setSpecialInstructions(r.getSpecialInstructions());
         b.setDurationDays(days);b.setRentalAmount(rental);b.setInsuranceAmount(insurance);
         b.setGrandTotal(rental.add(insurance).setScale(2,RoundingMode.HALF_UP));
-        return out(bookings.save(b));
+        Booking saved=bookings.save(b);
+        Notification n=new Notification();
+        n.setUser(user);
+        n.setTitle("Booking submitted");
+        n.setMessage("Your booking " + saved.getBookingReference() + " for " + car.getBrand() + " " + car.getName() + " has been submitted successfully.");
+        n.setType("BOOKING");
+        notifications.save(n);
+        return out(saved);
     }
     public List<BookingResponse> getForUser(String email,boolean admin){
         List<Booking> list=admin?bookings.findAll():bookings.findByUserEmailIgnoreCaseOrderByCreatedAtDesc(email);

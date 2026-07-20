@@ -2,6 +2,8 @@ package com.kalyani.car_rental_backend.config;
 
 import com.kalyani.car_rental_backend.car.entity.Car;
 import com.kalyani.car_rental_backend.car.repository.CarRepository;
+import com.kalyani.car_rental_backend.driver.entity.DriverProfile;
+import com.kalyani.car_rental_backend.driver.repository.DriverProfileRepository;
 import com.kalyani.car_rental_backend.user.entity.Role;
 import com.kalyani.car_rental_backend.user.entity.User;
 import com.kalyani.car_rental_backend.user.repository.UserRepository;
@@ -18,6 +20,7 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository users;
     private final CarRepository cars;
     private final PasswordEncoder encoder;
+    private final DriverProfileRepository drivers;
 
     @Value("${admin.email}")
     private String email;
@@ -31,17 +34,20 @@ public class DataSeeder implements CommandLineRunner {
     public DataSeeder(
             UserRepository users,
             CarRepository cars,
-            PasswordEncoder encoder
+            PasswordEncoder encoder,
+            DriverProfileRepository drivers
     ) {
         this.users = users;
         this.cars = cars;
         this.encoder = encoder;
+        this.drivers = drivers;
     }
 
     @Override
     public void run(String... args) {
 
         seedAdmin();
+        seedDrivers();
         seedCars();
     }
 
@@ -65,6 +71,83 @@ public class DataSeeder implements CommandLineRunner {
             users.save(admin);
 
             System.out.println("Default admin created successfully.");
+        }
+    }
+
+    /*
+     * Create two approved sample drivers for Phase 2 testing.
+     * These accounts can log in immediately and update online status/location.
+     */
+    private void seedDrivers() {
+        createOrUpdateDriver(
+                "Rahul Patil",
+                "rahul.driver@rentride.com",
+                "Driver@123",
+                "9876543211",
+                "MH12DL2026",
+                "1234",
+                "MH12DR1001",
+                "Maruti Suzuki Dzire",
+                18.5204,
+                73.8567
+        );
+
+        createOrUpdateDriver(
+                "Amit Jadhav",
+                "amit.driver@rentride.com",
+                "Driver@123",
+                "9876543212",
+                "MH14DL2026",
+                "5678",
+                "MH14DR1002",
+                "Hyundai Aura",
+                18.5074,
+                73.8077
+        );
+    }
+
+    private void createOrUpdateDriver(
+            String fullName,
+            String driverEmail,
+            String driverPassword,
+            String phone,
+            String licenseNumber,
+            String aadhaarLast4,
+            String vehicleNumber,
+            String vehicleModel,
+            double latitude,
+            double longitude
+    ) {
+        User user = users.findByEmailIgnoreCase(driverEmail).orElseGet(User::new);
+        boolean newUser = user.getId() == null;
+
+        user.setFullName(fullName);
+        user.setEmail(driverEmail.toLowerCase());
+        user.setPhone(phone);
+        user.setRole(Role.DRIVER);
+        user.setProvider("LOCAL");
+        user.setStatus("ACTIVE");
+        user.setEmailVerified(true);
+        if (newUser) {
+            user.setPassword(encoder.encode(driverPassword));
+        }
+        user = users.save(user);
+
+        DriverProfile profile = drivers.findByUserEmailIgnoreCase(driverEmail)
+                .orElseGet(DriverProfile::new);
+        profile.setUser(user);
+        profile.setVerificationStatus("APPROVED");
+        profile.setOnline(false);
+        profile.setLicenseNumber(licenseNumber);
+        profile.setAadhaarLast4(aadhaarLast4);
+        profile.setVehicleNumber(vehicleNumber);
+        profile.setVehicleModel(vehicleModel);
+        profile.setCurrentLatitude(latitude);
+        profile.setCurrentLongitude(longitude);
+        drivers.save(profile);
+
+        if (newUser) {
+            System.out.println("Sample driver created: " + driverEmail);
         }
     }
 
