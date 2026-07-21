@@ -79,31 +79,13 @@ public class DataSeeder implements CommandLineRunner {
      * These accounts can log in immediately and update online status/location.
      */
     private void seedDrivers() {
-        createOrUpdateDriver(
-                "Rahul Patil",
-                "rahul.driver@rentride.com",
-                "Driver@123",
-                "9876543211",
-                "MH12DL2026",
-                "1234",
-                "MH12DR1001",
-                "Maruti Suzuki Dzire",
-                18.5204,
-                73.8567
-        );
-
-        createOrUpdateDriver(
-                "Amit Jadhav",
-                "amit.driver@rentride.com",
-                "Driver@123",
-                "9876543212",
-                "MH14DL2026",
-                "5678",
-                "MH14DR1002",
-                "Hyundai Aura",
-                18.5074,
-                73.8077
-        );
+        createOrUpdateDriver("Rahul Patil","rahul.driver@rentride.com","Driver@123","9876543211","MH12DL2026","1234","MH12DR1001","Maruti Suzuki Dzire",18.5204,73.8567);
+        createOrUpdateDriver("Amit Jadhav","amit.driver@rentride.com","Driver@123","9876543212","MH14DL2026","5678","MH14DR1002","Hyundai Aura",18.5074,73.8077);
+        createOrUpdateDriver("Suresh More","suresh.driver@rentride.com","Driver@123","9876543213","MH01DL2026","2468","MH01DR1003","Toyota Etios",19.0760,72.8777);
+        createOrUpdateDriver("Nilesh Pawar","nilesh.driver@rentride.com","Driver@123","9876543214","MH15DL2026","1357","MH15DR1004","Maruti Suzuki Ertiga",19.9975,73.7898);
+        createOrUpdateDriver("Vijay Mane","vijay.driver@rentride.com","Driver@123","9876543215","MH10DL2026","8642","MH10DR1005","Tata Tigor",16.8524,74.5815);
+        createOrUpdateDriver("Rohan Shinde","rohan.driver@rentride.com","Driver@123","9876543216","MH09DL2026","9753","MH09DR1006","Honda Amaze",16.7050,74.2433);
+        createOrUpdateDriver("Akash Deshmukh","akash.driver@rentride.com","Driver@123","9876543217","MH04DL2026","4321","MH04DR1007","Hyundai Xcent",19.2183,72.9781);
     }
 
     private void createOrUpdateDriver(
@@ -137,7 +119,7 @@ public class DataSeeder implements CommandLineRunner {
                 .orElseGet(DriverProfile::new);
         profile.setUser(user);
         profile.setVerificationStatus("APPROVED");
-        profile.setOnline(false);
+        profile.setOnline(true);
         profile.setLicenseNumber(licenseNumber);
         profile.setAadhaarLast4(aadhaarLast4);
         profile.setVehicleNumber(vehicleNumber);

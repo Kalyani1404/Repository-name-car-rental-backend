@@ -29,173 +29,329 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
-    private final CorsConfigurationSource corsConfigurationSource;
+
+    private final CorsConfigurationSource
+            corsConfigurationSource;
+
     private final ObjectMapper objectMapper;
+
+    private final GoogleOAuth2SuccessHandler
+            googleOAuth2SuccessHandler;
 
     public SecurityConfig(
             JwtFilter jwtFilter,
-            @Qualifier("corsConfigurationSource")
-            CorsConfigurationSource corsConfigurationSource,
-            ObjectMapper objectMapper
+
+            @Qualifier(
+                    "corsConfigurationSource"
+            )
+            CorsConfigurationSource
+                    corsConfigurationSource,
+
+            ObjectMapper objectMapper,
+
+            GoogleOAuth2SuccessHandler
+                    googleOAuth2SuccessHandler
     ) {
-        this.jwtFilter = jwtFilter;
-        this.corsConfigurationSource = corsConfigurationSource;
-        this.objectMapper = objectMapper;
+
+        this.jwtFilter =
+                jwtFilter;
+
+        this.corsConfigurationSource =
+                corsConfigurationSource;
+
+        this.objectMapper =
+                objectMapper;
+
+        this.googleOAuth2SuccessHandler =
+                googleOAuth2SuccessHandler;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
+    public SecurityFilterChain
+    securityFilterChain(
             HttpSecurity http
     ) throws Exception {
 
         http
+
+                /*
+                 * CORS CONFIGURATION
+                 */
                 .cors(cors ->
                         cors.configurationSource(
                                 corsConfigurationSource
                         )
                 )
 
-                .csrf(csrf -> csrf.disable())
-
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
+                /*
+                 * CSRF DISABLED
+                 *
+                 * Your REST API uses JWT.
+                 */
+                .csrf(csrf ->
+                        csrf.disable()
                 )
 
-                .exceptionHandling(exception -> exception
-
-                        .authenticationEntryPoint(
-                                (
-                                        request,
-                                        response,
-                                        authenticationException
-                                ) -> writeErrorResponse(
-                                        response,
-                                        401,
-                                        "Authentication required"
-                                )
-                        )
-
-                        .accessDeniedHandler(
-                                (
-                                        request,
-                                        response,
-                                        accessDeniedException
-                                ) -> {
-                                    String message =
-                                            "Access denied";
-
-                                    String method =
-                                            request.getMethod();
-
-                                    if (
-                                            request
-                                                    .getRequestURI()
-                                                    .contains("/cars")
-                                                    &&
-                                                    List.of(
-                                                                    "POST",
-                                                                    "PUT",
-                                                                    "PATCH",
-                                                                    "DELETE"
-                                                            )
-                                                            .contains(
-                                                                    method.toUpperCase()
-                                                            )
-                                    ) {
-                                        message =
-                                                "Only ADMIN can add, update or delete cars";
-                                    }
-
-                                    writeErrorResponse(
-                                            response,
-                                            403,
-                                            message
-                                    );
-                                }
-                        )
+                /*
+                 * JWT APIs remain stateless.
+                 *
+                 * IF_REQUIRED is needed because
+                 * OAuth2 authorization temporarily
+                 * needs a session while redirecting
+                 * between your backend and Google.
+                 */
+                .sessionManagement(
+                        session ->
+                                session
+                                        .sessionCreationPolicy(
+                                                SessionCreationPolicy
+                                                        .IF_REQUIRED
+                                        )
                 )
 
-                .authorizeHttpRequests(auth -> auth
+                /*
+                 * ERROR HANDLING
+                 */
+                .exceptionHandling(
+                        exception ->
+                                exception
 
-                        .requestMatchers(
-                                HttpMethod.OPTIONS,
-                                "/**"
-                        )
-                        .permitAll()
+                                        .authenticationEntryPoint(
+                                                (
+                                                        request,
+                                                        response,
+                                                        authenticationException
+                                                ) ->
+                                                        writeErrorResponse(
+                                                                response,
+                                                                HttpServletResponse
+                                                                        .SC_UNAUTHORIZED,
+                                                                "Authentication required"
+                                                        )
+                                        )
 
-                        .requestMatchers(
-                                "/auth/register",
-                                "/auth/register-driver",
-                                "/auth/login",
-                                "/error"
-                        )
-                        .permitAll()
+                                        .accessDeniedHandler(
+                                                (
+                                                        request,
+                                                        response,
+                                                        accessDeniedException
+                                                ) -> {
 
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/cars",
-                                "/cars/**"
-                        )
-                        .hasRole("ADMIN")
+                                                    String message =
+                                                            "Access denied";
 
-                        .requestMatchers(
-                                HttpMethod.PUT,
-                                "/cars/**"
-                        )
-                        .hasRole("ADMIN")
+                                                    String method =
+                                                            request
+                                                                    .getMethod();
 
-                        .requestMatchers(
-                                HttpMethod.PATCH,
-                                "/cars/**"
-                        )
-                        .hasRole("ADMIN")
+                                                    if (
+                                                            request
+                                                                    .getRequestURI()
+                                                                    .contains(
+                                                                            "/cars"
+                                                                    )
+                                                                    &&
+                                                                    List.of(
+                                                                                    "POST",
+                                                                                    "PUT",
+                                                                                    "PATCH",
+                                                                                    "DELETE"
+                                                                            )
+                                                                            .contains(
+                                                                                    method
+                                                                                            .toUpperCase()
+                                                                            )
+                                                    ) {
 
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/cars/**"
-                        )
-                        .hasRole("ADMIN")
+                                                        message =
+                                                                "Only ADMIN can add, update or delete cars";
+                                                    }
 
-                        .requestMatchers(
-                                "/cars",
-                                "/cars/**",
-                                "/bookings",
-                                "/bookings/**",
-                                "/payments",
-                                "/payments/**",
-                                "/users/me"
-                        )
-                        .authenticated()
-
-                        .requestMatchers("/admin", "/admin/**", "/coupons", "/coupons/**")
-                        .hasRole("ADMIN")
-
-                        .requestMatchers("/driver", "/driver/**")
-                        .hasRole("DRIVER")
-
-                        .requestMatchers(
-                                "/addresses", "/addresses/**",
-                                "/notifications", "/notifications/**",
-                                "/reviews", "/reviews/**",
-                                "/emergency-contacts", "/emergency-contacts/**"
-                        )
-                        .authenticated()
-
-                        .requestMatchers(
-                                "/users",
-                                "/users/**"
-                        )
-                        .hasRole("ADMIN")
-
-                        .anyRequest()
-                        .authenticated()
+                                                    writeErrorResponse(
+                                                            response,
+                                                            HttpServletResponse
+                                                                    .SC_FORBIDDEN,
+                                                            message
+                                                    );
+                                                }
+                                        )
                 )
 
+                /*
+                 * URL AUTHORIZATION
+                 */
+                .authorizeHttpRequests(
+                        auth ->
+                                auth
+
+                                        /*
+                                         * Allow browser
+                                         * preflight requests.
+                                         */
+                                        .requestMatchers(
+                                                HttpMethod.OPTIONS,
+                                                "/**"
+                                        )
+                                        .permitAll()
+
+                                        /*
+                                         * Public authentication APIs.
+                                         */
+                                        .requestMatchers(
+                                                "/auth/register",
+                                                "/auth/register-driver",
+                                                "/auth/login",
+                                                "/error"
+                                        )
+                                        .permitAll()
+
+                                        /*
+                                         * Google OAuth2 URLs.
+                                         *
+                                         * Example:
+                                         *
+                                         * /oauth2/authorization/google
+                                         *
+                                         * /login/oauth2/code/google
+                                         */
+                                        .requestMatchers(
+                                                "/oauth2/**",
+                                                "/login/oauth2/**"
+                                        )
+                                        .permitAll()
+
+                                        /*
+                                         * Only ADMIN can add cars.
+                                         */
+                                        .requestMatchers(
+                                                HttpMethod.POST,
+                                                "/cars",
+                                                "/cars/**"
+                                        )
+                                        .hasRole(
+                                                "ADMIN"
+                                        )
+
+                                        /*
+                                         * Only ADMIN can update cars.
+                                         */
+                                        .requestMatchers(
+                                                HttpMethod.PUT,
+                                                "/cars/**"
+                                        )
+                                        .hasRole(
+                                                "ADMIN"
+                                        )
+
+                                        .requestMatchers(
+                                                HttpMethod.PATCH,
+                                                "/cars/**"
+                                        )
+                                        .hasRole(
+                                                "ADMIN"
+                                        )
+
+                                        /*
+                                         * Only ADMIN can delete cars.
+                                         */
+                                        .requestMatchers(
+                                                HttpMethod.DELETE,
+                                                "/cars/**"
+                                        )
+                                        .hasRole(
+                                                "ADMIN"
+                                        )
+
+                                        /*
+                                         * Logged-in users.
+                                         */
+                                        .requestMatchers(
+                                                "/cars",
+                                                "/cars/**",
+                                                "/bookings",
+                                                "/bookings/**",
+                                                "/payments",
+                                                "/payments/**",
+                                                "/users/me"
+                                        )
+                                        .authenticated()
+
+                                        /*
+                                         * Admin APIs.
+                                         */
+                                        .requestMatchers(
+                                                "/admin",
+                                                "/admin/**",
+                                                "/coupons",
+                                                "/coupons/**"
+                                        )
+                                        .hasRole(
+                                                "ADMIN"
+                                        )
+
+                                        /*
+                                         * Driver APIs.
+                                         */
+                                        .requestMatchers(
+                                                "/driver",
+                                                "/driver/**"
+                                        )
+                                        .hasRole(
+                                                "DRIVER"
+                                        )
+
+                                        /*
+                                         * General protected APIs.
+                                         */
+                                        .requestMatchers(
+                                                "/addresses",
+                                                "/addresses/**",
+                                                "/notifications",
+                                                "/notifications/**",
+                                                "/reviews",
+                                                "/reviews/**",
+                                                "/emergency-contacts",
+                                                "/emergency-contacts/**"
+                                        )
+                                        .authenticated()
+
+                                        /*
+                                         * User management
+                                         * only ADMIN.
+                                         */
+                                        .requestMatchers(
+                                                "/users",
+                                                "/users/**"
+                                        )
+                                        .hasRole(
+                                                "ADMIN"
+                                        )
+
+                                        .anyRequest()
+                                        .authenticated()
+                )
+
+                /*
+                 * GOOGLE OAUTH2 LOGIN
+                 */
+                .oauth2Login(
+                        oauth2 ->
+                                oauth2
+                                        .successHandler(
+                                                googleOAuth2SuccessHandler
+                                        )
+                )
+
+                /*
+                 * Existing JWT filter.
+                 *
+                 * This keeps your current JWT
+                 * authentication working.
+                 */
                 .addFilterBefore(
                         jwtFilter,
-                        UsernamePasswordAuthenticationFilter.class
+                        UsernamePasswordAuthenticationFilter
+                                .class
                 );
 
         return http.build();
@@ -207,18 +363,32 @@ public class SecurityConfig {
             String message
     ) throws IOException {
 
-        response.setStatus(status);
+        response.setStatus(
+                status
+        );
 
         response.setContentType(
-                MediaType.APPLICATION_JSON_VALUE
+                MediaType
+                        .APPLICATION_JSON_VALUE
         );
 
         Map<String, Object> body =
                 new LinkedHashMap<>();
 
-        body.put("success", false);
-        body.put("message", message);
-        body.put("data", null);
+        body.put(
+                "success",
+                false
+        );
+
+        body.put(
+                "message",
+                message
+        );
+
+        body.put(
+                "data",
+                null
+        );
 
         objectMapper.writeValue(
                 response.getOutputStream(),
@@ -227,13 +397,17 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public PasswordEncoder
+    passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration
+    public AuthenticationManager
+    authenticationManager(
+            AuthenticationConfiguration
+                    configuration
     ) throws Exception {
 
         return configuration

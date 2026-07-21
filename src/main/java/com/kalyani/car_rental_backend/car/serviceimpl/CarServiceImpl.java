@@ -6,10 +6,15 @@ import com.kalyani.car_rental_backend.car.entity.Car;
 import com.kalyani.car_rental_backend.car.repository.CarRepository;
 import com.kalyani.car_rental_backend.car.service.CarService;
 import com.kalyani.car_rental_backend.exception.ResourceNotFoundException;
+import com.kalyani.car_rental_backend.response.PageResponse;
+import com.kalyani.car_rental_backend.response.PaginationUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class CarServiceImpl implements CarService {
@@ -27,6 +32,21 @@ public class CarServiceImpl implements CarService {
                 .stream()
                 .map(this::convertToResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<CarResponse> getPaged(int page, int size, String sortBy, String sortDir) {
+        Pageable pageable = PaginationUtils.createPageable(
+                page,
+                size,
+                sortBy,
+                sortDir,
+                Set.of("id", "name", "brand", "model", "year", "pricePerDay", "rating", "createdAt")
+        );
+
+        Page<CarResponse> result = repo.findAll(pageable).map(this::convertToResponse);
+        return PageResponse.from(result, sortBy, sortDir);
     }
 
     @Override
